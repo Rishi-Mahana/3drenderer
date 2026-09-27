@@ -1,0 +1,169 @@
+#version 330 core
+
+in vec3 glColor;
+in vec3 Normal;
+in vec4 worldPosition;
+in vec2 TexC;
+
+out vec4 FragColor;
+
+struct Light {
+vec3 position;
+
+float constant;
+float linear;
+float quadratic;
+
+vec3 ambient;
+vec3 diffuse;
+vec3 specular;
+
+vec3 direction;
+
+float incutoff;
+float outcutoff;
+
+int mode;
+
+};
+struct Material {
+    vec4 diffuse;
+    vec3 specular;
+    float shininess;
+    bool hasdiffuse;
+    bool hasspecular;
+    int alphamode;
+    float alphacutoff;
+};
+
+uniform Light lights[32];
+uniform int numlight;
+
+uniform bool interpolation;
+uniform float opacity;
+uniform vec3 viewPos;
+uniform Material material;
+uniform sampler2D diffusemap;
+uniform sampler2D specularmap;
+
+vec3 calcDir (Light dirl, vec3 normal, vec3 viewDir, vec3 baseAmbient, vec3 baseDiffuse, vec3 baseSpecular, float shininess){
+
+vec3 ambient=baseAmbient*dirl.ambient;
+vec3 lightDir=normalize(dirl.direction);
+vec3 norm=normalize(normal);
+float diff= max(dot(norm,lightDir), 0.0);
+vec3 diffuse=diff*baseDiffuse*dirl.diffuse;
+vec3 reflectDir = reflect(-lightDir, norm);
+float spec= pow(max(dot(reflectDir, viewDir),0.0), shininess);
+vec3 specular = spec * baseSpecular * dirl.specular;
+return (ambient + diffuse + specular);
+
+}
+vec3 calcPoint( Light ptl, vec3 normal, vec3 viewDir, vec3 baseAmbient, vec3 baseDiffuse, vec3 baseSpecular, float shininess, vec3 fragPos){
+
+vec3 ambient=baseAmbient*ptl.ambient;
+vec3 lightDir=normalize(ptl.position-fragPos);
+vec3 norm=normalize(normal);
+float diff= max(dot(norm,lightDir), 0.0);
+vec3 diffuse=diff*baseDiffuse*ptl.diffuse;
+vec3 reflectDir = reflect(-lightDir, norm);
+float spec= pow(max(dot(reflectDir, viewDir),0.0), shininess);
+vec3 specular = spec * baseSpecular * ptl.specular;
+float distance= length(ptl.position-fragPos);
+float attenuation = 1.0 /
+                (ptl.constant +
+                 ptl.linear * distance +
+                 ptl.quadratic * distance * distance);
+ambient *= attenuation;
+diffuse *= attenuation;
+specular *= attenuation;
+return (ambient + diffuse + specular);
+
+}
+vec3 calcSpot( Light spt, vec3 normal, vec3 viewDir, vec3 baseAmbient, vec3 baseDiffuse, vec3 baseSpecular, float shininess, vec3 fragPos){
+
+vec3 ambient=baseAmbient*spt.ambient;
+vec3 lightDir=normalize(spt.position-fragPos);
+vec3 norm=normalize(normal);
+float diff= max(dot(norm,lightDir), 0.0);
+vec3 diffuse=diff*baseDiffuse*spt.diffuse;
+vec3 reflectDir = reflect(-lightDir, norm);
+float spec= pow(max(dot(reflectDir, viewDir),0.0), shininess);
+vec3 specular = spec * baseSpecular * spt.specular;
+float theta= dot(lightDir, normalize(-spt.direction));
+float epsilon = spt.incutoff-spt.outcutoff;
+float intensity = clamp((theta - spt.outcutoff) / epsilon, 0.0, 1.0);
+float distance= length(spt.position-fragPos);
+float attenuation = 1.0 /
+                (spt.constant +
+                 spt.linear * distance +
+                 spt.quadratic * distance * distance);
+
+diffuse *= intensity;
+specular *= intensity;
+ambient *= attenuation;
+diffuse *= attenuation;
+specular *= attenuation;
+return (ambient + diffuse + specular);
+
+}
+
+void main(){
+    vec3 result=vec3(0.0);
+    vec3 viewDir=normalize(viewPos-worldPosition.xyz);
+
+    vec3 baseAmb;
+    vec3 baseDiff;
+    vec3 baseSpec;
+    float shininess;
+vec4 difColor = material.diffuse;
+vec4 specColor = vec4(material.specular, 1.0);
+
+if (material.hasdiffuse) {
+    difColor = texture(diffusemap, TexC);
+}
+
+if (material.hasspecular) {
+    specColor = texture(specularmap, TexC);
+}
+
+if (interpolation) {
+    baseAmb = glColor;
+    baseDiff = glColor * difColor.rgb;
+    baseSpec = glColor * specColor.rgb;
+    shininess = 32.0;
+} else {
+    baseAmb = difColor.rgb;
+    baseDiff = difColor.rgb;
+    baseSpec = specColor.rgb;
+    shininess = material.shininess;
+}
+
+if (material.hasspecular) {
+    shininess = mix(2.0, shininess, specColor.a);
+}
+float fragA = clamp(difColor.a * opacity, 0.0, 1.0);
+
+if (material.alphamode
+ == 0) {
+    fragA = 1.0;
+} else if (material.alphamode
+ == 1) {
+    if (fragA < material.alphacutoff) {
+        discard;
+    }
+    fragA = 1.0;
+}
+
+    for(int i=0;i<numlight;i++){
+        if(lights[i].mode==1){
+            result+=calcDir(lights[i],Normal,viewDir,baseAmb,baseDiff,baseSpec,shininess);
+        }else if(lights[i].mode==2){
+            result+=calcPoint(lights[i],Normal,viewDir,baseAmb,baseDiff,baseSpec,shininess,worldPosition.xyz);
+        }else if(lights[i].mode==3){
+            result+=calcSpot(lights[i],Normal,viewDir,baseAmb,baseDiff,baseSpec,shininess,worldPosition.xyz);
+        }
+    }
+
+    FragColor=vec4(result,fragA);
+}
