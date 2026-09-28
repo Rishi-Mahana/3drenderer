@@ -24,7 +24,7 @@ fn main() {
             .join("assets/gltfmodels/skull_salazar_downloadable.glb")
     });
 
-    let mut window = Window::new(720, 960, "furry dog kisser", WindowMode::Windowed);
+    let mut window = Window::new(720, 960, "skull", WindowMode::Windowed);
     let mut renderer = Renderer::new(&mut window);
     renderer.set_depth_test(true);
     renderer.set_blend_func(BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha);
