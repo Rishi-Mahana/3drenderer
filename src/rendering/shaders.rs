@@ -19,8 +19,6 @@ pub struct Shader{
 pub enum ShaderType{
     VertexColor,
     Lighting,
-    TextureLighting, //deprecated :(
-    Texture, //deprecated sadge
 
 }
 
@@ -487,13 +485,8 @@ impl Shader {
 
     pub fn set_tint(&mut self, r: f32, g: f32, b: f32) {
         match self.shadertype{
-            ShaderType::Texture => {
-                unsafe {
-                    gl::UseProgram(self.program);
-                    gl::Uniform3f(*self.uniforms.get("tint").unwrap(), r, g, b);
-                }
 
-            }
+
             ShaderType::VertexColor => {
                 unsafe {
                     gl::UseProgram(self.program);
@@ -517,7 +510,6 @@ impl Shader {
     }
     pub fn set_opacity(&mut self, o:f32){
         match self.shadertype {
-            ShaderType::Texture => {}
             _ => {
                 unsafe {
                     gl::UseProgram(self.program);
@@ -528,7 +520,6 @@ impl Shader {
     }
     pub fn set_interpolation(&mut self, o:bool){
         match self.shadertype {
-            ShaderType::Texture => {}
             _ => {
                 unsafe {
                     gl::UseProgram(self.program);
@@ -693,7 +684,6 @@ impl Shader {
         self.numlights=nlights ;
         match self.shadertype {
             ShaderType::VertexColor => { return }
-            ShaderType::Texture => { return }
             _ => {}
         }
 
