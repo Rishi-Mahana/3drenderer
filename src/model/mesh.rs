@@ -127,12 +127,7 @@ impl Mesh{
             ebo: 0,
         }
     }
-    pub fn poly(n:u8){
 
-
-
-
-    }
     pub fn new_triangle()->Self{
         let color=Vec3::new(0.5,0.5,0.5);
         let root_3 = 3.0f32.sqrt();

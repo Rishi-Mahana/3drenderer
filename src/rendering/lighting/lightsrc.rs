@@ -136,9 +136,40 @@ impl<'a> LightSource<'a>{
 
         self
     }
+    pub fn with_constant(mut self, c: f32 ) -> Self {
+        match self.lightmode {
+            LightMode::SpotLight {inner_cutoff,outer_cutoff,direction,constant,linear,quadratic} => {
+                self.lightmode=LightMode::SpotLight{constant:c,linear,quadratic,inner_cutoff,outer_cutoff,direction};
+
+            }
+            _=>{}
+        }
+        self
+    }
+    pub fn with_linear(mut self, l: f32 ) -> Self {
+        match self.lightmode {
+            LightMode::SpotLight {inner_cutoff,outer_cutoff,direction,constant,linear,quadratic} => {
+                self.lightmode=LightMode::SpotLight{constant,linear:l,quadratic,inner_cutoff,outer_cutoff,direction};
+
+            }
+            _=>{}
+        }
+        self
+    }
+    pub fn with_quadratic(mut self, q: f32 ) -> Self {
+        match self.lightmode {
+            LightMode::SpotLight {inner_cutoff,outer_cutoff,direction,constant,linear,quadratic} => {
+                self.lightmode=LightMode::SpotLight{constant,linear,quadratic:q,inner_cutoff,outer_cutoff,direction};
+
+            }
+            _=>{}
+        }
+        self
+    }
     pub fn set_light_specific_coloring(&mut self, light_specific_coloring:bool){
         self.light_specific_coloring = light_specific_coloring;
-    }
+    } 
+    
 
 
 
